@@ -37,7 +37,7 @@ function get_abs_build_var()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
-    (cd $T; CALLED_FROM_SETUP=true BUILD_SYSTEM=build/core \
+    (\cd $T; CALLED_FROM_SETUP=true BUILD_SYSTEM=build/core \
       make --no-print-directory -C "$T" -f build/core/config.mk dumpvar-abs-$1)
 }
 
@@ -83,7 +83,7 @@ VARIANT_CHOICES=(user userdebug eng)
 # Ensure our colors are used above preset colors
 unset GCC_COLORS
 
-# Always use diagnostic colors, supported in gcc 4.7.x+
+# Always use diagnostic colors, supported in gcc 4.9.x+
 export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
 # check to see if the supplied variant is valid
@@ -146,7 +146,7 @@ function setpaths()
     case $ARCH in
         x86) toolchaindir=x86/i686-linux-android-$targetgccversion/bin
             ;;
-        arm) toolchaindir=arm/arm-linux-androideabi-4.7/bin
+        arm) toolchaindir=arm/arm-linux-androideabi-$targetgccversion/bin
             ;;
         mips) toolchaindir=mips/mipsel-linux-android-$targetgccversion/bin
             ;;
@@ -162,7 +162,7 @@ function setpaths()
     unset ARM_EABI_TOOLCHAIN ARM_EABI_TOOLCHAIN_PATH
     case $ARCH in
         arm)
-            toolchaindir=arm/arm-eabi-4.7/bin
+            toolchaindir=arm/arm-eabi-$targetgccversion/bin
             if [ -d "$gccprebuiltdir/$toolchaindir" ]; then
                  export ARM_EABI_TOOLCHAIN="$gccprebuiltdir/$toolchaindir"
                  ARM_EABI_TOOLCHAIN_PATH=":$gccprebuiltdir/$toolchaindir"
@@ -449,7 +449,9 @@ function print_lunch_menu()
     echo
     echo "You're building on" $uname
     echo
-    echo "Lunch menu... pick a combo:"
+    if [ "z${ILLUSION_DEVICES_ONLY}" == "z" ]; then
+       echo "Lunch menu... pick a combo:"
+    fi
 
     local i=1
     local choice
@@ -459,7 +461,23 @@ function print_lunch_menu()
         i=$(($i+1))
     done | column
 
+    if [ "z${ILLUSION_DEVICES_ONLY}" != "z" ]; then
+       echo "... and don't forget the bacon!"
+    fi
+
     echo
+}
+
+function brunch()
+{
+    breakfast $*
+    if [ $? -eq 0 ]; then
+        mka illusion zip
+    else
+        echo "No such item in brunch menu. Try 'breakfast'"
+        return 1
+    fi
+    return $?
 }
 
 function lunch()
@@ -1254,7 +1272,7 @@ function smoketest()
         return
     fi
 
-    (cd "$T" && mmm tests/SmokeTest) &&
+    (\cd "$T" && mmm tests/SmokeTest) &&
       adb uninstall com.android.smoketest > /dev/null &&
       adb uninstall com.android.smoketest.tests > /dev/null &&
       adb install $ANDROID_PRODUCT_OUT/data/app/SmokeTestApp.apk &&
@@ -1281,7 +1299,7 @@ function godir () {
     T=$(gettop)
     if [[ ! -f $T/filelist ]]; then
         echo -n "Creating index..."
-        (cd $T; find . -wholename ./out -prune -o -wholename ./.repo -prune -o -type f > filelist)
+        (\cd $T; find . -wholename ./out -prune -o -wholename ./.repo -prune -o -type f > filelist)
         echo " Done"
         echo ""
     fi
@@ -1314,7 +1332,7 @@ function godir () {
     else
         pathname=${lines[0]}
     fi
-    cd $T/$pathname
+    \cd $T/$pathname
 }
 
 function mka() {
