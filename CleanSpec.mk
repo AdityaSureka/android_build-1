@@ -160,6 +160,7 @@ $(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES)
 $(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/SHARED_LIBRARIES)
 $(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/EXECUTABLES)
 $(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/lib/*.o)
+$(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/build.prop)
 
 # Wait, back to some JB development!
 $(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/build.prop)

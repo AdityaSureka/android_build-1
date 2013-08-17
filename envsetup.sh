@@ -16,6 +16,7 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
 - jgrep:   Greps on all local Java files.
 - resgrep: Greps on all local res/*.xml files.
 - godir:   Go to the directory containing a file.
+- mka:      Builds using SCHED_BATCH on all processors.
 
 Look at the source to view more functions. The complete list is:
 EOF
@@ -61,12 +62,12 @@ function check_product()
         return
     fi
 
-    if (echo -n $1 | grep -q -e "^slim_") ; then
-       SLIM_BUILD=$(echo -n $1 | sed -e 's/^slim_//g')
+    if (echo -n $1 | grep -q -e "^illusion_") ; then
+       ILLUSION_BUILD=$(echo -n $1 | sed -e 's/^illusion_//g')
     else
-       SLIM_BUILD=
+       ILLUSION_BUILD=
     fi
-    export SLIM_BUILD
+    export ILLUSION_BUILD
 
     CALLED_FROM_SETUP=true BUILD_SYSTEM=build/core \
         TARGET_PRODUCT=$1 \
@@ -78,6 +79,12 @@ function check_product()
 }
 
 VARIANT_CHOICES=(user userdebug eng)
+
+# Ensure our colors are used above preset colors
+unset GCC_COLORS
+
+# Always use diagnostic colors, supported in gcc 4.7.x+
+export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
 # check to see if the supplied variant is valid
 function check_variant()
@@ -139,7 +146,7 @@ function setpaths()
     case $ARCH in
         x86) toolchaindir=x86/i686-linux-android-$targetgccversion/bin
             ;;
-        arm) toolchaindir=arm/arm-linux-androideabi-$targetgccversion/bin
+        arm) toolchaindir=arm/arm-linux-androideabi-4.7/bin
             ;;
         mips) toolchaindir=mips/mipsel-linux-android-$targetgccversion/bin
             ;;
@@ -155,7 +162,7 @@ function setpaths()
     unset ARM_EABI_TOOLCHAIN ARM_EABI_TOOLCHAIN_PATH
     case $ARCH in
         arm)
-            toolchaindir=arm/arm-eabi-$targetgccversion/bin
+            toolchaindir=arm/arm-eabi-4.7/bin
             if [ -d "$gccprebuiltdir/$toolchaindir" ]; then
                  export ARM_EABI_TOOLCHAIN="$gccprebuiltdir/$toolchaindir"
                  ARM_EABI_TOOLCHAIN_PATH=":$gccprebuiltdir/$toolchaindir"
@@ -435,11 +442,6 @@ function add_lunch_combo()
 }
 
 # add the default one here
-add_lunch_combo aosp_arm-eng
-add_lunch_combo aosp_x86-eng
-add_lunch_combo aosp_mips-eng
-add_lunch_combo vbox_x86-eng
-
 function print_lunch_menu()
 {
     local uname=$(uname)
@@ -457,6 +459,18 @@ function print_lunch_menu()
     done | column
 
     echo
+}
+
+function brunch()
+{
+    breakfast $*
+    if [ $? -eq 0 ]; then
+        mka illusion
+    else
+        echo "No such item in brunch menu. Try 'breakfast'"
+        return 1
+    fi
+    return $?
 }
 
 function lunch()

@@ -142,8 +142,7 @@ endif
 include $(BUILD_SYSTEM)/envsetup.mk
 
 # Useful macros
-#include $(BUILD_SYSTEM)/linaro_compilerchecks.mk
-
+include $(BUILD_SYSTEM)/linaro_compilerchecks.mk
 
 # Boards may be defined under $(SRC_TARGET_DIR)/board/$(TARGET_DEVICE)
 # or under vendor/*/$(TARGET_DEVICE).  Search in both places, but
@@ -236,7 +235,7 @@ TARGET_CPU_ABI2 := $(strip $(TARGET_CPU_ABI2))
 
 # default target GCC version
 ifeq ($(strip $(TARGET_GCC_VERSION)),)
-TARGET_GCC_VERSION := 4.6
+TARGET_GCC_VERSION := 4.7
 endif
 
 # $(1): os/arch

@@ -416,12 +416,13 @@ def WriteFullOTAPackage(input_zip, output_zip):
     script.Unmount("/system")
 
   script.ShowProgress(0.5, 0)
-  script.Print("")
-  script.Print("")
-  script.Print("Slim Roms")
-  script.Print("")
-  script.Print(" www.slimroms.net  ")
-  script.Print("")
+  script.Print("*******************************************")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*           ILLUSION PROJECT       *")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*******************************************")
 
   if OPTIONS.wipe_user_data:
     script.FormatPartition("/data")
@@ -429,7 +430,13 @@ def WriteFullOTAPackage(input_zip, output_zip):
   if "selinux_fc" in OPTIONS.info_dict:
     WritePolicyConfig(OPTIONS.info_dict["selinux_fc"], output_zip)
 
-  script.Print("")
+  script.Print("*******************************************")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*         INSTALLING ILLUSION       *")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*******************************************")
   script.Print("Format and Mount System, Mount Data...")
   script.FormatPartition("/system")
   script.Mount("/system")
@@ -437,7 +444,13 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.UnpackPackageDir("system", "/system")
   script.UnpackPackageDir("data", "/data")
 
-  script.Print("Symlinks and permissions...")
+  script.Print("*******************************************")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*     SYMLINKS & PERMISSIONS     *")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*******************************************")
   symlinks = CopySystemFiles(input_zip, output_zip)
   script.MakeSymlinks(symlinks)
 
@@ -459,10 +472,23 @@ def WriteFullOTAPackage(input_zip, output_zip):
     script.RunBackup("restore")
 
   script.ShowProgress(0.2, 10)
-  script.Print("Flashing Boot Image...")
+  script.Print("*******************************************")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*          FLASHING KERNEL         *")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*******************************************")
   script.WriteRawImage("/boot", "boot.img")
 
   script.ShowProgress(0.1, 0)
+  script.Print("*******************************************")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*        ILLUSION INSTALLED         *")
+  script.Print("*                                         *")
+  script.Print("*                                         *")
+  script.Print("*******************************************")
   device_specific.FullOTA_InstallEnd()
 
   if OPTIONS.extra_script is not None:
