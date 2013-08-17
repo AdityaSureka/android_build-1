@@ -37,7 +37,7 @@ function get_abs_build_var()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
-    (\cd $T; CALLED_FROM_SETUP=true BUILD_SYSTEM=build/core \
+    (cd $T; CALLED_FROM_SETUP=true BUILD_SYSTEM=build/core \
       make --no-print-directory -C "$T" -f build/core/config.mk dumpvar-abs-$1)
 }
 
@@ -442,6 +442,7 @@ function add_lunch_combo()
 }
 
 # add the default one here
+
 function print_lunch_menu()
 {
     local uname=$(uname)
@@ -459,18 +460,6 @@ function print_lunch_menu()
     done | column
 
     echo
-}
-
-function brunch()
-{
-    breakfast $*
-    if [ $? -eq 0 ]; then
-        mka illusion
-    else
-        echo "No such item in brunch menu. Try 'breakfast'"
-        return 1
-    fi
-    return $?
 }
 
 function lunch()
@@ -1265,7 +1254,7 @@ function smoketest()
         return
     fi
 
-    (\cd "$T" && mmm tests/SmokeTest) &&
+    (cd "$T" && mmm tests/SmokeTest) &&
       adb uninstall com.android.smoketest > /dev/null &&
       adb uninstall com.android.smoketest.tests > /dev/null &&
       adb install $ANDROID_PRODUCT_OUT/data/app/SmokeTestApp.apk &&
@@ -1292,7 +1281,7 @@ function godir () {
     T=$(gettop)
     if [[ ! -f $T/filelist ]]; then
         echo -n "Creating index..."
-        (\cd $T; find . -wholename ./out -prune -o -wholename ./.repo -prune -o -type f > filelist)
+        (cd $T; find . -wholename ./out -prune -o -wholename ./.repo -prune -o -type f > filelist)
         echo " Done"
         echo ""
     fi
@@ -1325,7 +1314,7 @@ function godir () {
     else
         pathname=${lines[0]}
     fi
-    \cd $T/$pathname
+    cd $T/$pathname
 }
 
 function mka() {
