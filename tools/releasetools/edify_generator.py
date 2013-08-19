@@ -88,7 +88,7 @@ class EdifyGenerator(object):
   def AssertDevice(self, device):
     """Assert that the device identifier is the given string."""
     cmd = ('assert(' +
-           ' || \0'.join(['getprop("ro.product.device") == "%s" || getprop ("ro.build.product") == "%s"'
+           ' || \0'.join(['getprop("ro.product.device") == "%s" || getprop("ro.build.product") == "%s"'
                          % (i, i) for i in device.split(",")]) +
            ');')
     self.script.append(self._WordWrap(cmd))
@@ -100,17 +100,6 @@ class EdifyGenerator(object):
                          for b in bootloaders]) +
            ");")
     self.script.append(self._WordWrap(cmd))
-
-  def RunBackup(self, command):
-    self.script.append('package_extract_dir("system/addon.d", "/system/addon.d");')
-    self.script.append('package_extract_file("system/bin/backuptool.sh", "/tmp/backuptool.sh");')
-    self.script.append('package_extract_file("system/bin/backuptool.functions", "/tmp/backuptool.functions");')
-    self.script.append('set_perm(0, 0, 0777, "/tmp/backuptool.sh");')
-    self.script.append('set_perm(0, 0, 0644, "/tmp/backuptool.functions");')
-    self.script.append(('run_program("/tmp/backuptool.sh", "%s");' % command))
-    if command == "restore":
-        self.script.append('delete("/system/bin/backuptool.sh");')
-        self.script.append('delete("/system/bin/backuptool.functions");')
 
   def ShowProgress(self, frac, dur):
     """Update the progress bar, advancing it over 'frac' over the next

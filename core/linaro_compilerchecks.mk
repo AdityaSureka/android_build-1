@@ -9,7 +9,7 @@
 #
 # Usage examples:
 #      echo "GCC version $(cc-version)" [e.g. 47 for 4.7]
-#      echo $(call cc-ifversion, -lt, 46, GCC older than 4.7)
+#      echo $(call cc-ifversion, -lt, 47, GCC older than 4.7)
 #      # Use -mcpu=cortex-a9 if supported, otherwise -mcpu=cortex-a8
 #      echo $(call cc-option, -mcpu=cortex-a9, -mcpu=cortex-a8)
 #      # Use -mcpu=cortex-a9 if supported, otherwise -mcpu=cortex-a8

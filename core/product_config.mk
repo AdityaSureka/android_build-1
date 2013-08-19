@@ -190,7 +190,7 @@ else
     # Read in all of the product definitions specified by the AndroidProducts.mk
     # files in the tree.
     all_product_configs := $(get-all-product-makefiles)
-  endif
+  endif # ILLUSION_BUILD
 endif
 
 ifeq ($(ILLUSION_BUILD),)

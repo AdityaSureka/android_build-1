@@ -52,9 +52,11 @@ Usage:  ota_from_target_files [flags] input_target_files output_ota_package
   -a  (--aslr_mode)  <on|off>
       Specify whether to turn on ASLR for the package (on by default).
 
-  --backup <boolean>
-      Enable or disable the execution of backuptool.sh.
-      Disabled by default.
+  --override_device <device>
+      Override device-specific asserts. Can be a comma-separated list.
+
+  --no_assert <true|false>
+      Including this will turn device asserts off.
 
 """
 
@@ -92,7 +94,8 @@ OPTIONS.omit_prereq = False
 OPTIONS.extra_script = None
 OPTIONS.aslr_mode = True
 OPTIONS.worker_threads = 3
-OPTIONS.backuptool = False
+OPTIONS.override_device = 'auto'
+OPTIONS.no_assert = False
 
 def MostPopularKey(d, default):
   """Given a dict, return the key corresponding to the largest
@@ -261,28 +264,6 @@ class Item:
 
     recurse(self, (-1, -1, -1, -1))
 
-def CopyDataFiles(input_zip, output_zip=None,
-                    substitute=None):
-  """Copies files underneathe data/ in the input zip to the output
-  zip. Populates the Item class with their metadata, and returns a
-  skipped (but the other side effects still happen). substitute is an
-  optional dict of {output filename: contents} to be output instead of
-  certain input files.
-  """
-
-  for info in input_zip.infolist():
-    if info.filename.startswith("DATA/"):
-      basefilename = info.filename[5:]
-      info2 = copy.copy(info)
-      fn = info2.filename = "data/" + basefilename
-      if output_zip is not None:
-        data = input_zip.read(info.filename)
-        output_zip.writestr(info2, data)
-        if fn.endswith("/"):
-          Item.Get(fn[:-1], dir=True)
-        else:
-          Item.Get(fn, dir=False)
-  return
 
 def CopySystemFiles(input_zip, output_zip=None,
                     substitute=None):
@@ -328,6 +309,14 @@ def SignOutput(temp_zip_name, output_zip_name):
 
   common.SignFile(temp_zip_name, output_zip_name, OPTIONS.package_key, pw,
                   whole_file=True)
+
+
+def AppendAssertions(script, info_dict):
+  if OPTIONS.override_device == "auto":
+    device = GetBuildProp("ro.product.device", info_dict)
+  else:
+    device = OPTIONS.override_device
+  script.AssertDevice(device)
 
 
 def MakeRecoveryPatch(input_tmp, output_zip, recovery_img, boot_img):
@@ -407,13 +396,11 @@ def WriteFullOTAPackage(input_zip, output_zip):
       metadata=metadata,
       info_dict=OPTIONS.info_dict)
 
-  device_specific.FullOTA_Assertions()
-  device_specific.FullOTA_InstallBegin()
+  if not OPTIONS.no_assert:
+    #AppendAssertions(script, OPTIONS.info_dict)
+	device_specific.FullOTA_Assertions()
 
-  if OPTIONS.backuptool:
-    script.Mount("/system")
-    script.RunBackup("backup")
-    script.Unmount("/system")
+  device_specific.FullOTA_InstallBegin()
 
   script.ShowProgress(0.5, 0)
   script.Print("*******************************************")
@@ -423,7 +410,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.Print("*                                         *")
   script.Print("*                                         *")
   script.Print("*******************************************")
-
+  script.Print("Erasing System...")
   if OPTIONS.wipe_user_data:
     script.FormatPartition("/data")
 
@@ -439,8 +426,10 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.Print("*******************************************")
   script.Print("Format and Mount System, Mount Data...")
   script.FormatPartition("/system")
+  script.Print("Mounting System...")
   script.Mount("/system")
   script.Mount("/data")
+  script.ShowProgress(0.5, 40)
   script.UnpackPackageDir("system", "/system")
   script.UnpackPackageDir("data", "/data")
 
@@ -456,9 +445,6 @@ def WriteFullOTAPackage(input_zip, output_zip):
 
   boot_img = common.GetBootableImage("boot.img", "boot.img",
                                      OPTIONS.input_tmp, "BOOT")
-  #recovery_img = common.GetBootableImage("recovery.img", "recovery.img",
-  #                                       OPTIONS.input_tmp, "RECOVERY")
-  #MakeRecoveryPatch(OPTIONS.input_tmp, output_zip, recovery_img, boot_img)
 
   Item.GetMetadata(input_zip)
   Item.Get("system").SetPermissions(script)
@@ -466,10 +452,6 @@ def WriteFullOTAPackage(input_zip, output_zip):
   common.CheckSize(boot_img.data, "boot.img", OPTIONS.info_dict)
   common.ZipWriteStr(output_zip, "boot.img", boot_img.data)
   script.ShowProgress(0.2, 0)
-
-  if OPTIONS.backuptool:
-    script.ShowProgress(0.2, 10)
-    script.RunBackup("restore")
 
   script.ShowProgress(0.2, 10)
   script.Print("*******************************************")
@@ -603,6 +585,7 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
   metadata["post-build"] = target_fp
 
   script.Mount("/system")
+  script.AssertSomeFingerprint(source_fp, target_fp)
 
   source_boot = common.GetBootableImage(
       "/tmp/boot.img", "boot.img", OPTIONS.source_tmp, "BOOT",
@@ -611,12 +594,7 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
       "/tmp/boot.img", "boot.img", OPTIONS.target_tmp, "BOOT")
   updating_boot = (source_boot.data != target_boot.data)
 
-  #source_recovery = common.GetBootableImage(
-  #    "/tmp/recovery.img", "recovery.img", OPTIONS.source_tmp, "RECOVERY",
-  #    OPTIONS.source_info_dict)
-  #target_recovery = common.GetBootableImage(
-  #    "/tmp/recovery.img", "recovery.img", OPTIONS.target_tmp, "RECOVERY")
-  #updating_recovery = (source_recovery.data != target_recovery.data)
+  updating_recovery = False
 
   # Here's how we divide up the progress bar:
   #  0.1 for verifying the start state (PatchCheck calls)
@@ -624,6 +602,9 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
   #  0.1 for unpacking verbatim files, symlinking, and doing the
   #      device-specific commands.
 
+  if OPTIONS.no_assert:
+    AppendAssertions(script, OPTIONS.target_info_dict)
+  device_specific.IncrementalOTA_Assertions()
 
   script.Print("Verifying current system...")
 
@@ -756,10 +737,6 @@ def WriteIncrementalOTAPackage(target_zip, source_zip, output_zip):
     script.Print("Unpacking new files...")
     script.UnpackPackageDir("system", "/system")
 
-  #if updating_recovery:
-  #  script.Print("Unpacking new recovery...")
-  #  script.UnpackPackageDir("recovery", "/system")
-
   script.Print("Symlinks and permissions...")
 
   # Create all the symlinks that don't already exist, or point to
@@ -813,15 +790,20 @@ def main(argv):
       OPTIONS.omit_prereq = True
     elif o in ("-e", "--extra_script"):
       OPTIONS.extra_script = a
+    elif o in ("--no_assert"):
+      if a in ("on", "On", "true", "True", "yes", "Yes"):
+        OPTIONS.no_assert = True
+      else:
+        OPTIONS.no_assert = False
     elif o in ("-a", "--aslr_mode"):
       if a in ("on", "On", "true", "True", "yes", "Yes"):
         OPTIONS.aslr_mode = True
       else:
         OPTIONS.aslr_mode = False
+    elif o in ("--override_device"):
+      OPTIONS.override_device = a
     elif o in ("--worker_threads"):
       OPTIONS.worker_threads = int(a)
-    elif o in ("--backup"):
-      OPTIONS.backuptool = bool(a.lower() == 'true')
     else:
       return False
     return True
@@ -830,13 +812,14 @@ def main(argv):
                              extra_opts="b:k:i:d:wne:a:",
                              extra_long_opts=["board_config=",
                                               "package_key=",
+                                              "no_assert=",
                                               "incremental_from=",
                                               "wipe_user_data",
                                               "no_prereq",
                                               "extra_script=",
                                               "worker_threads=",
                                               "aslr_mode=",
-                                              "backup=",
+                                              "override_device="
                                               ],
                              extra_option_handler=option_handler)
 
