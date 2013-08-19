@@ -1093,6 +1093,39 @@ cacheimage-nodeps: | $(INTERNAL_USERIMAGES_DEPS)
 
 endif # BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE
 
+
+# -----------------------------------------------------------------
+# vendor partition image
+ifdef BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE
+INTERNAL_VENDORIMAGE_FILES := \
+    $(filter $(TARGET_OUT_VENDOR)/%,$(ALL_DEFAULT_INSTALLED_MODULES))
+
+vendorimage_intermediates := \
+    $(call intermediates-dir-for,PACKAGING,vendor)
+BUILT_VENDORIMAGE_TARGET := $(PRODUCT_OUT)/vendor.img
+
+define build-vendorimage-target
+  $(call pretty,"Target vendor fs image: $(INSTALLED_VENDORIMAGE_TARGET)")
+  @mkdir -p $(TARGET_OUT_VENDOR)
+  @mkdir -p $(vendorimage_intermediates) && rm -rf $(vendorimage_intermediates)/vendor_image_info.txt
+  $(call generate-userimage-prop-dictionary, $(vendorimage_intermediates)/vendor_image_info.txt, skip_fsck=true)
+  $(hide) PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH \
+      ./build/tools/releasetools/build_image.py \
+      $(TARGET_OUT_VENDOR) $(vendorimage_intermediates)/vendor_image_info.txt $(INSTALLED_VENDORIMAGE_TARGET)
+  $(hide) $(call assert-max-image-size,$(INSTALLED_VENDORIMAGE_TARGET),$(BOARD_VENDORIMAGE_PARTITION_SIZE),yaffs)
+endef
+
+# We just build this directly to the install location.
+INSTALLED_VENDORIMAGE_TARGET := $(BUILT_VENDORIMAGE_TARGET)
+$(INSTALLED_VENDORIMAGE_TARGET): $(INTERNAL_USERIMAGES_DEPS) $(INTERNAL_VENDORIMAGE_FILES)
+	$(build-vendorimage-target)
+
+.PHONY: vendorimage-nodeps
+vendorimage-nodeps: | $(INTERNAL_USERIMAGES_DEPS)
+	$(build-vendorimage-target)
+
+endif # BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE
+
 # -----------------------------------------------------------------
 # bring in the installer image generation defines if necessary
 ifeq ($(TARGET_USE_DISKINSTALLER),true)
@@ -1184,6 +1217,7 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 		$(INSTALLED_SYSTEMIMAGE) \
 		$(INSTALLED_USERDATAIMAGE_TARGET) \
 		$(INSTALLED_CACHEIMAGE_TARGET) \
+		$(INSTALLED_VENDORIMAGE_TARGET) \
 		$(INSTALLED_ANDROID_INFO_TXT_TARGET) \
 		$(built_ota_tools) \
 		$(APKCERTS_FILE) \
@@ -1251,6 +1285,11 @@ endif
 	@# Contents of the data image
 	$(hide) $(call package_files-copy-root, \
 		$(TARGET_OUT_DATA),$(zip_root)/DATA)
+ifdef BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE
+	@# Contents of the vendor image
+	$(hide) $(call package_files-copy-root, \
+		$(TARGET_OUT_VENDOR),$(zip_root)/VENDOR)
+endif
 	@# Extra contents of the OTA package
 	$(hide) mkdir -p $(zip_root)/OTA/bin
 	$(hide) $(ACP) $(INSTALLED_ANDROID_INFO_TXT_TARGET) $(zip_root)/OTA/
@@ -1343,7 +1382,7 @@ ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
 	@echo -e ${CL_YLW}"Running custom releasetool..."${CL_RST}
 	$(hide) OTAPACKAGE=$(INTERNAL_OTA_PACKAGE_TARGET) APKCERTS=$(APKCERTS_FILE) $(TARGET_CUSTOM_RELEASETOOL)
 else
-	@echo -e ${CL_YLW}"Running releasetool..."${CL_RST}
+	@echo -e ${CL_YLW}"Running vendor releasetool..."${CL_RST}
 	$(hide) OTAPACKAGE=$(INTERNAL_OTA_PACKAGE_TARGET) APKCERTS=$(APKCERTS_FILE) ./vendor/illusion/tools/squisher
 endif
 
