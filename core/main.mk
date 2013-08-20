@@ -186,7 +186,6 @@ $(error stop)
 endif
 
 BUILD_EMULATOR := false
-
 ifeq (darwin,$(HOST_OS))
 GCC_REALPATH = $(realpath $(shell which $(HOST_CC)))
 ifneq ($(findstring llvm-gcc,$(GCC_REALPATH)),)
@@ -322,7 +321,7 @@ ifneq (,$(user_variant))
   ifneq (true,$(DISABLE_DEXPREOPT))
     ifeq ($(user_variant),user)
       ifeq ($(HOST_OS),linux)
-        WITH_DEXPREOPT := false
+        WITH_DEXPREOPT := true
       endif
     endif
   endif
@@ -353,7 +352,6 @@ endif # !enable_target_debugging
 
 ifeq ($(TARGET_BUILD_VARIANT),eng)
 tags_to_install := debug eng
-WITH_DEXPREOPT := false
 ifneq ($(filter ro.setupwizard.mode=ENABLED, $(call collapse-pairs, $(ADDITIONAL_BUILD_PROPERTIES))),)
   # Don't require the setup wizard on eng builds
   ADDITIONAL_BUILD_PROPERTIES := $(filter-out ro.setupwizard.mode=%,\

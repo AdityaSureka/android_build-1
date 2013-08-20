@@ -24,7 +24,6 @@ PRODUCT_PACKAGES += \
     app_process \
     applypatch \
     bmgr \
-    bugreport \
     content \
     dhcpcd \
     dhcpcd-run-hooks \

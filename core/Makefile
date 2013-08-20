@@ -13,7 +13,13 @@ ifneq ($(BUILD_WITH_COLORS),0)
 endif
 
 # Pick a reasonable string to use to identify files.
-FILE_NAME_TAG := eng.$(USER)
+ifneq "" "$(filter eng.%,$(BUILD_NUMBER))"
+  # BUILD_NUMBER has a timestamp in it, which means that
+  # it will change every time.  Pick a stable value.
+  FILE_NAME_TAG := eng.$(USER)
+else
+  FILE_NAME_TAG := $(BUILD_NUMBER)
+endif
 
 is_tests_build := $(filter tests,$(MAKECMDGOALS))
 
@@ -29,8 +35,13 @@ define check-product-copy-files
 $(if $(filter %.apk, $(1)),$(error \
     Prebuilt apk found in PRODUCT_COPY_FILES: $(1), use BUILD_PREBUILT instead!))
 endef
-unique_product_copy_files_destinations :=
+# filter out the duplicate <source file>:<dest file> pairs.
+unique_product_copy_files_pairs :=
 $(foreach cf,$(PRODUCT_COPY_FILES), \
+    $(if $(filter $(unique_product_copy_files_pairs),$(cf)),,\
+        $(eval unique_product_copy_files_pairs += $(cf))))
+unique_product_copy_files_destinations :=
+$(foreach cf,$(unique_product_copy_files_pairs), \
     $(eval _src := $(call word-colon,1,$(cf))) \
     $(eval _dest := $(call word-colon,2,$(cf))) \
     $(if $(filter $(unique_product_copy_files_destinations),$(_dest)), \
@@ -41,7 +52,9 @@ $(foreach cf,$(PRODUCT_COPY_FILES), \
             $(eval $(call copy-one-file,$(_src),$(_fulldest)))) \
         $(eval ALL_DEFAULT_INSTALLED_MODULES += $(_fulldest)) \
         $(eval unique_product_copy_files_destinations += $(_dest))))
+unique_product_copy_files_pairs :=
 unique_product_copy_files_destinations :=
+
 # -----------------------------------------------------------------
 # docs/index.html
 ifeq (,$(TARGET_BUILD_APPS))
@@ -735,7 +748,8 @@ $(TARGET_RECOVERY_ROOT_TIMESTAMP): $(INTERNAL_RECOVERY_FILES) \
 	$(hide) cat $(INSTALLED_DEFAULT_PROP_TARGET) $(recovery_build_prop) \
 	        > $(TARGET_RECOVERY_ROOT_OUT)/default.prop
 	@echo -e ${CL_YLW}"Modifying default.prop"${CL_RST}
-	sed -i 's/ro.build.date.utc=.*/ro.build.date.utc=0/g' $(TARGET_RECOVERY_ROOT_OUT)/default.prop
+	$(SED_INPLACE) 's/ro.build.date.utc=.*/ro.build.date.utc=0/g' $(TARGET_RECOVERY_ROOT_OUT)/default.prop
+	$(SED_INPLACE) 's/ro.adb.secure=1//g' $(TARGET_RECOVERY_ROOT_OUT)/default.prop
 	@echo -e ${CL_CYN}"----- Made recovery filesystem --------"$(TARGET_RECOVERY_ROOT_OUT)${CL_RST}
 	@touch $(TARGET_RECOVERY_ROOT_TIMESTAMP)
 
@@ -1158,6 +1172,7 @@ OTATOOLS := $(DISTTOOLS) \
 .PHONY: otatools
 otatools: $(OTATOOLS)
 
+
 UNPACKBOOTIMG :=  $(HOST_OUT_EXECUTABLES)/unpackbootimg$(HOST_EXECUTABLE_SUFFIX)
 
 .PHONY: unpackbootimg
@@ -1246,6 +1261,7 @@ endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/RECOVERY/pagesize
 endif
+
 	@# Components of the boot image
 	$(hide) mkdir -p $(zip_root)/BOOT
 	$(hide) $(call package_files-copy-root, \
@@ -1522,10 +1538,17 @@ dalvikfiles: $(INTERNAL_DALVIK_MODULES)
 # -----------------------------------------------------------------
 # The emulator package
 ifeq ($(BUILD_EMULATOR),true)
+
+INSTALLED_QEMU_KERNEL_TARGET := $(PRODUCT_OUT)/kernel-qemu
+
+$(INSTALLED_QEMU_KERNEL_TARGET): $(INSTALLED_KERNEL_TARGET)
+	$(hide) $(ACP) -fp $(INSTALLED_KERNEL_TARGET) $(INSTALLED_QEMU_KERNEL_TARGET)
+
 INTERNAL_EMULATOR_PACKAGE_FILES += \
-        $(HOST_OUT_EXECUTABLES)/emulator$(HOST_EXECUTABLE_SUFFIX) \
-        prebuilts/qemu-kernel/$(TARGET_ARCH)/kernel-qemu \
-        $(INSTALLED_RAMDISK_TARGET) \
+		$(HOST_OUT_EXECUTABLES)/emulator$(HOST_EXECUTABLE_SUFFIX) \
+		$(INSTALLED_QEMU_KERNEL_TARGET) \
+		$(INSTALLED_RAMDISK_TARGET) \
+		$(recovery_ramdisk) \
 		$(INSTALLED_SYSTEMIMAGE) \
 		$(INSTALLED_USERDATAIMAGE_TARGET)
 
@@ -1536,6 +1559,9 @@ INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES)
 	@echo -e ${CL_YLW}"Package:"${CL_RST}" $@"
 	$(hide) zip -qj $@ $(INTERNAL_EMULATOR_PACKAGE_FILES)
+
+.PHONY: goldfish
+goldfish: $(INTERNAL_EMULATOR_PACKAGE_TARGET)
 
 endif
 # -----------------------------------------------------------------
@@ -1661,6 +1687,7 @@ $(INTERNAL_SDK_TARGET): $(deps)
 		$(HOST_OUT_EXECUTABLES)/atree \
 		$(addprefix -f ,$(PRIVATE_INPUT_FILES)) \
 			-m $(PRIVATE_DEP_FILE) \
+			-I / \
 			-I . \
 			-I $(PRODUCT_OUT) \
 			-I $(HOST_OUT) \
@@ -1688,7 +1715,7 @@ $(INTERNAL_SDK_TARGET): $(deps)
 MAIN_SDK_NAME := $(sdk_name)
 MAIN_SDK_DIR  := $(sdk_dir)
 MAIN_SDK_ZIP  := $(INTERNAL_SDK_TARGET)
-ifneq ($(filter win_sdk,$(MAKECMDGOALS)),)
+ifneq ($(filter win_sdk winsdk-coretools,$(MAKECMDGOALS)),)
 include $(TOPDIR)development/build/tools/windows_sdk.mk
 endif
 
