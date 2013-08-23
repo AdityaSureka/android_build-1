@@ -244,4 +244,4 @@ else:
             print "Done"
             sys.exit()
 
-print "Repository for %s not found in the SlimRoms Github repository list. If this is in error, you may need to manually add it to .repo/local_manifests/illusion_manifest.xml" % device
+print "Repository for %s not found in the IllusionProject Github repository list. If this is in error, you may need to manually add it to .repo/local_manifests/illusion_manifest.xml" % device
