@@ -1391,16 +1391,17 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	   --override_device=$(override_device) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
+ILLUSION_TARGET_PACKAGE := $(PRODUCT_OUT)/illusion-$(ILLUSION_VERSION).zip
+
 .PHONY: otapackage illusion zip
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 illusion zip: otapackage
 ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
-	@echo -e ${CL_YLW}"Running custom releasetool..."${CL_RST}
-	$(hide) OTAPACKAGE=$(INTERNAL_OTA_PACKAGE_TARGET) APKCERTS=$(APKCERTS_FILE) $(TARGET_CUSTOM_RELEASETOOL)
-else
-	@echo -e ${CL_YLW}"Running vendor releasetool..."${CL_RST}
-	$(hide) OTAPACKAGE=$(INTERNAL_OTA_PACKAGE_TARGET) APKCERTS=$(APKCERTS_FILE) ./vendor/illusion/tools/squisher
+	$(error TARGET_CUSTOM_RELEASETOOL is deprecated)
 endif
+	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(ILLUSION_TARGET_PACKAGE)
+	$(hide) $(MD5SUM) $(ILLUSION_TARGET_PACKAGE) > $(ILLUSION_TARGET_PACKAGE).md5sum
+	@echo -e ${CL_CYN}"Package Complete: $(ILLUSION_TARGET_PACKAGE)"${CL_RST}
 
 # -----------------------------------------------------------------
 # The update package
