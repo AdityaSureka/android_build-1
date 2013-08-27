@@ -154,6 +154,11 @@ class EdifyGenerator(object):
     destination directory."""
     self.script.append('package_extract_dir("%s", "%s");' % (src, dst))
 
+  def CopyFile(self, src, dst):
+    """Copy a given file from the OTA package into the given
+    destination directory."""
+    self.script.append('package_extract_file("%s", "%s");' % (src, dst))
+
   def Comment(self, comment):
     """Write a comment into the update script."""
     self.script.append("")
@@ -215,7 +220,7 @@ class EdifyGenerator(object):
         self.script.append(
             'package_extract_file("%(fn)s", "%(device)s");' % args)
       elif partition_type == "BML":
-        self.script.append(
+	        self.script.append(
             ('assert(package_extract_file("%(fn)s", "/tmp/%(device)s.img"),\n'
              '       write_raw_image("/tmp/%(device)s.img", "%(device)s"),\n'
              '       delete("/tmp/%(device)s.img"));') % args)

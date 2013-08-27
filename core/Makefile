@@ -1369,16 +1369,10 @@ else
     OTA_FROM_TARGET_SCRIPT := $(TARGET_RELEASETOOL_OTA_FROM_TARGET_SCRIPT)
 endif
 
-ifeq ($(TARGET_OTA_ASSERT_SKIP),true)
-    $(INTERNAL_OTA_PACKAGE_TARGET): skip_assert := true
+ifeq ($(ILLUSION_BUILD),true)
+    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
 else
-    $(INTERNAL_OTA_PACKAGE_TARGET): skip_assert := false
-endif
-
-ifeq ($(TARGET_OTA_ASSERT_DEVICE),)
-    $(INTERNAL_OTA_PACKAGE_TARGET): override_device := auto
-else
-    $(INTERNAL_OTA_PACKAGE_TARGET): override_device := $(TARGET_OTA_ASSERT_DEVICE)
+    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
 endif
 
 $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
@@ -1387,11 +1381,7 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	$(OTA_FROM_TARGET_SCRIPT) -v \
 	   -p $(HOST_OUT) \
 	   -k $(KEY_CERT_PAIR) \
-	   --no_assert=$(skip_assert) \
-	   --override_device=$(override_device) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
-
-ILLUSION_TARGET_PACKAGE := $(PRODUCT_OUT)/illusion-$(ILLUSION_VERSION).zip
 
 .PHONY: otapackage illusion zip
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
@@ -1399,9 +1389,8 @@ illusion zip: otapackage
 ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
 	$(error TARGET_CUSTOM_RELEASETOOL is deprecated)
 endif
-	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(ILLUSION_TARGET_PACKAGE)
-	$(hide) $(MD5SUM) $(ILLUSION_TARGET_PACKAGE) > $(ILLUSION_TARGET_PACKAGE).md5sum
-	@echo -e ${CL_CYN}"Package Complete: $(ILLUSION_TARGET_PACKAGE)"${CL_RST}
+	@echo -e ${CL_YLW}"Running vendor releasetool..."${CL_RST}
+	$(hide) OTAPACKAGE=$(INTERNAL_OTA_PACKAGE_TARGET) APKCERTS=$(APKCERTS_FILE) ./vendor/illusion/tools/squisher
 
 # -----------------------------------------------------------------
 # The update package
@@ -1560,9 +1549,6 @@ INTERNAL_EMULATOR_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES)
 	@echo -e ${CL_YLW}"Package:"${CL_RST}" $@"
 	$(hide) zip -qj $@ $(INTERNAL_EMULATOR_PACKAGE_FILES)
-
-.PHONY: goldfish
-goldfish: $(INTERNAL_EMULATOR_PACKAGE_TARGET)
 
 endif
 # -----------------------------------------------------------------
