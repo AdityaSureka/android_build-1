@@ -87,10 +87,8 @@ class EdifyGenerator(object):
 
   def AssertDevice(self, device):
     """Assert that the device identifier is the given string."""
-    cmd = ('assert(' +
-           ' || \0'.join(['getprop("ro.product.device") == "%s" || getprop("ro.build.product") == "%s"'
-                         % (i, i) for i in device.split(",")]) +
-           ');')
+    cmd = ('assert(getprop("ro.product.device") == "%s" ||\0'
+           'getprop("ro.build.product") == "%s");' % (device, device))
     self.script.append(self._WordWrap(cmd))
 
   def AssertSomeBootloader(self, *bootloaders):
@@ -100,6 +98,16 @@ class EdifyGenerator(object):
                          for b in bootloaders]) +
            ");")
     self.script.append(self._WordWrap(cmd))
+
+  def RunBackup(self, command):
+    self.script.append('package_extract_file("system/bin/backuptool.sh", "/tmp/backuptool.sh");')
+    self.script.append('package_extract_file("system/bin/backuptool.functions", "/tmp/backuptool.functions");')
+    self.script.append('set_perm(0, 0, 0777, "/tmp/backuptool.sh");')
+    self.script.append('set_perm(0, 0, 0644, "/tmp/backuptool.functions");')
+    self.script.append(('run_program("/tmp/backuptool.sh", "%s");' % command))
+    if command == "restore":
+        self.script.append('delete("/system/bin/backuptool.sh");')
+        self.script.append('delete("/system/bin/backuptool.functions");')
 
   def ShowProgress(self, frac, dur):
     """Update the progress bar, advancing it over 'frac' over the next
@@ -153,11 +161,6 @@ class EdifyGenerator(object):
     """Unpack a given directory from the OTA package into the given
     destination directory."""
     self.script.append('package_extract_dir("%s", "%s");' % (src, dst))
-
-  def CopyFile(self, src, dst):
-    """Copy a given file from the OTA package into the given
-    destination directory."""
-    self.script.append('package_extract_file("%s", "%s");' % (src, dst))
 
   def Comment(self, comment):
     """Write a comment into the update script."""
@@ -213,17 +216,11 @@ class EdifyGenerator(object):
       args = {'device': p.device, 'fn': fn}
       if partition_type == "MTD":
         self.script.append(
-            'package_extract_file("%(fn)s", "/tmp/boot.img");'
-            'write_raw_image("/tmp/boot.img", "%(device)s");' % args
+            'write_raw_image(package_extract_file("%(fn)s"), "%(device)s");'
             % args)
       elif partition_type == "EMMC":
         self.script.append(
             'package_extract_file("%(fn)s", "%(device)s");' % args)
-      elif partition_type == "BML":
-	        self.script.append(
-            ('assert(package_extract_file("%(fn)s", "/tmp/%(device)s.img"),\n'
-             '       write_raw_image("/tmp/%(device)s.img", "%(device)s"),\n'
-             '       delete("/tmp/%(device)s.img"));') % args)
       else:
         raise ValueError("don't know how to write \"%s\" partitions" % (p.fs_type,))
 

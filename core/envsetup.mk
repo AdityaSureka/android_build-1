@@ -57,8 +57,10 @@ BUILD_OS := $(HOST_OS)
 
 # If USE_MINGW is set, we change HOST_OS to Windows to build the
 # Windows SDK. Only a subset of tools and SDK will manage to build properly.
+ifeq ($(HOST_OS),linux)
 ifneq ($(USE_MINGW),)
 	HOST_OS := windows
+endif
 endif
 
 ifeq ($(HOST_OS),)
@@ -140,7 +142,7 @@ ifeq (,$(strip $(OUT_DIR_COMMON_BASE)))
 ifneq ($(TOPDIR),)
 OUT_DIR := $(TOPDIR)out
 else
-OUT_DIR := $(CURDIR)/out
+OUT_DIR := $(shell python -c 'import os,sys; print os.path.realpath(sys.argv[1])' .)/out
 endif
 else
 OUT_DIR := $(OUT_DIR_COMMON_BASE)/$(notdir $(PWD))
