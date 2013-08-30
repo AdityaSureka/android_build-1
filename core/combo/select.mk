@@ -101,20 +101,9 @@ ifneq ($(USE_CCACHE),)
   ifeq ($(HOST_OS)-$(BUILD_OS),windows-linux)
     CCACHE_HOST_TAG := linux-$(BUILD_ARCH)
   endif
-
-  # Search executable
-  ccache =
-  ifneq ($(strip $(wildcard /usr/bin/ccache)),)
-    ccache := /usr/bin/ccache
-    # Enable compression with host executable
-    export CCACHE_COMPRESS := 1
-  else ifneq ($(strip $(wildcard $(ANDROID_BUILD_TOP)/prebuilts/misc/$(HOST_PREBUILT_EXTRA_TAG)/ccache/ccache)),)
-    ccache := $(ANDROID_BUILD_TOP)/prebuilts/misc/$(HOST_PREBUILT_EXTRA_TAG)/ccache/ccache
-  else ifneq ($(strip $(wildcard $(ANDROID_BUILD_TOP)/prebuilts/misc/$(HOST_PREBUILT_TAG)/ccache/ccache)),)
-    ccache := $(ANDROID_BUILD_TOP)/prebuilts/misc/$(HOST_PREBUILT_TAG)/ccache/ccache
-  endif
-
-  # Configure ccache
+  ccache := prebuilts/misc/$(CCACHE_HOST_TAG)/ccache/ccache
+  # Check that the executable is here.
+  ccache := $(strip $(wildcard $(ccache)))
   ifdef ccache
     # prepend ccache if necessary
     ifneq ($(ccache),$(firstword $($(combo_target)CC)))

@@ -228,10 +228,8 @@ ifeq ($(TARGET_CPU_ABI),)
 endif
 TARGET_CPU_ABI2 := $(strip $(TARGET_CPU_ABI2))
 
-# default target GCC version
-ifeq ($(strip $(TARGET_GCC_VERSION)),)
+# use GCC version 4.7
 TARGET_GCC_VERSION := 4.7
-endif
 
 # $(1): os/arch
 define select-android-config-h
