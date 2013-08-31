@@ -469,7 +469,7 @@ function print_lunch_menu()
        echo "  (ohai, koush!)"
     fi
     echo
-    if [ "z${ILLUSION_DEVICES_ONLY}" != "z" ]; then
+    if [ "z${ILLUSION_DEVICES_ONLY}" == "z" ]; then
        echo "Breakfast menu... pick a combo:"
     else
        echo "Lunch menu... pick a combo:"
