@@ -1526,7 +1526,6 @@ $(APPS_ZIP): $(INSTALLED_SYSTEMIMAGE)
 	$(hide) mkdir -p $(dir $@)
 	$(hide) zip -qj $@ $(TARGET_OUT_APPS)/*
 
-
 #------------------------------------------------------------------
 # A zip of emma code coverage meta files. Generated for fully emma
 # instrumented build.
