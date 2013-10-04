@@ -1409,6 +1409,7 @@ illusion zip: otapackage
 ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
 	$(error TARGET_CUSTOM_RELEASETOOL is deprecated)
 endif
+	$(hide) ./vendor/illusion/tools/finaltools
 	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(ILLUSION_TARGET_PACKAGE)
 	$(hide) $(MD5SUM) $(ILLUSION_TARGET_PACKAGE) > $(ILLUSION_TARGET_PACKAGE).md5sum
 	@echo -e ${CL_CYN}"Package Complete: $(ILLUSION_TARGET_PACKAGE)"${CL_RST}
