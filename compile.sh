@@ -19,8 +19,8 @@ echo "Welcome $USER"
 echo
 echo "What can I do for you?"
 echo "Option 1: Repo sync"
-echo "Option 2: Rebuild"
-echo "Option 3: Build clean"
+echo "Option 2: Build clean"
+echo "Option 3: Rebuild"
 echo "Option 4: Create a changelog"
 echo
 
