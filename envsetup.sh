@@ -494,7 +494,7 @@ function brunch()
 {
     breakfast $*
     if [ $? -eq 0 ]; then
-        mka illusion zip
+        mka illusion
     else
         echo "No such item in brunch menu. Try 'breakfast'"
         return 1
@@ -505,7 +505,7 @@ function brunch()
 function breakfast()
 {
     target=$1
-    LIQUID_DEVICES_ONLY="true"
+    ILLUSION_DEVICES_ONLY="true"
     unset LUNCH_MENU_CHOICES
     add_lunch_combo full-eng
     for f in `/bin/ls vendor/illusion/vendorsetup.sh 2> /dev/null`
@@ -525,7 +525,7 @@ function breakfast()
             lunch $target
         else
             # This is probably just the model name
-            lunch liquid_$target-userdebug
+            lunch illusion_$target-userdebug
         fi
     fi
     return $?

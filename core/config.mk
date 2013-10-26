@@ -228,11 +228,6 @@ ifeq ($(TARGET_CPU_ABI),)
 endif
 TARGET_CPU_ABI2 := $(strip $(TARGET_CPU_ABI2))
 
-# default target GCC version
-ifeq ($(strip $(TARGET_GCC_VERSION)),)
-TARGET_GCC_VERSION := 4.7
-endif
-
 # $(1): os/arch
 define select-android-config-h
 build/core/combo/include/arch/$(1)/AndroidConfig.h
@@ -428,17 +423,6 @@ HOST_GLOBAL_CPPFLAGS += $(HOST_RELEASE_CPPFLAGS)
 
 TARGET_GLOBAL_CFLAGS += $(TARGET_RELEASE_CFLAGS)
 TARGET_GLOBAL_CPPFLAGS += $(TARGET_RELEASE_CPPFLAGS)
-
-ifdef TARGET_EXTRA_CFLAGS
-  ifndef TARGET_EXTRA_CPPFLAGS
-    TARGET_EXTRA_CPPFLAGS := $(TARGET_EXTRA_CFLAGS)
-    TARGET_GLOBAL_CFLAGS += $(TARGET_EXTRA_CFLAGS)
-    TARGET_GLOBAL_CPPFLAGS += $(TARGET_EXTRA_CPPFLAGS)
-  else
-    TARGET_GLOBAL_CFLAGS += $(TARGET_EXTRA_CFLAGS)
-    TARGET_GLOBAL_CPPFLAGS += $(TARGET_EXTRA_CPPFLAGS)
-  endif
-endif
 
 # define llvm tools and global flags
 include $(BUILD_SYSTEM)/llvm_config.mk

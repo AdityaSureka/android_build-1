@@ -467,7 +467,7 @@ def WriteFullOTAPackage(input_zip, output_zip):
   script.Print("*******************************************")
   script.Print("*                                         *")
   script.Print("*                                         *")
-  script.Print("*        ILLUSION INSTALLED               *")
+  script.Print("*           ILLUSION INSTALLED            *")
   script.Print("*                                         *")
   script.Print("*                                         *")
   script.Print("*******************************************")

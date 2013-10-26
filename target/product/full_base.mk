@@ -21,25 +21,11 @@
 
 PRODUCT_PACKAGES := \
     libfwdlockengine \
-    VideoEditor \
     WAPPushManager
-
-PRODUCT_PACKAGES += \
-    Galaxy4 \
-    HoloSpiralWallpaper \
-    LiveWallpapers \
-    LiveWallpapersPicker \
-    MagicSmokeWallpapers \
-    NoiseField \
-    PhaseBeam \
-    VisualizationWallpapers \
-    PhotoTable
 
 # Additional settings used in all AOSP builds
 PRODUCT_PROPERTY_OVERRIDES := \
-    ro.com.android.dateformat=MM-dd-yyyy \
-    ro.config.ringtone=Themos.ogg \
-    ro.config.notification_sound=Tejat.ogg
+    ro.com.android.dateformat=MM-dd-yyyy
 
 # Put en_US first in the list, so make it default.
 PRODUCT_LOCALES := en_US

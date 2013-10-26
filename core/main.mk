@@ -182,10 +182,8 @@ $(info $(space))
 $(info Please follow the machine setup instructions at)
 $(info $(space)$(space)$(space)$(space)https://source.android.com/source/download.html)
 $(info ************************************************************)
-$(error stop)
 endif
 
-BUILD_EMULATOR := false
 ifeq (darwin,$(HOST_OS))
 GCC_REALPATH = $(realpath $(shell which $(HOST_CC)))
 ifneq ($(findstring llvm-gcc,$(GCC_REALPATH)),)

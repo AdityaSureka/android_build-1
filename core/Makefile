@@ -320,6 +320,9 @@ endif
 # exist with the suffixes ".x509.pem" and ".pk8".
 DEFAULT_KEY_CERT_PAIR := $(DEFAULT_SYSTEM_DEV_CERTIFICATE)
 
+ifneq ($(OTA_PACKAGE_SIGNING_KEY),)
+    DEFAULT_KEY_CERT_PAIR := $(OTA_PACKAGE_SIGNING_KEY)
+endif
 
 # Rules that need to be present for the all targets, even
 # if they don't do anything.
@@ -700,6 +703,13 @@ INTERNAL_RECOVERY_FILES := $(filter $(TARGET_RECOVERY_OUT)/%, \
 # build always uses dev-keys for this; release packaging tools will
 # substitute other keys for this one.
 OTA_PUBLIC_KEYS := $(DEFAULT_SYSTEM_DEV_CERTIFICATE).x509.pem
+
+ifneq ($(OTA_PACKAGE_SIGNING_KEY),)
+    OTA_PUBLIC_KEYS := $(OTA_PACKAGE_SIGNING_KEY).x509.pem
+    PRODUCT_EXTRA_RECOVERY_KEYS := $(DEFAULT_SYSTEM_DEV_CERTIFICATE)
+endif
+
+PRODUCT_EXTRA_RECOVERY_KEYS += build/target/product/security/cm
 
 # Generate a file containing the keys that will be read by the
 # recovery binary.
@@ -1391,16 +1401,17 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(DISTTOOLS)
 	   --override_device=$(override_device) \
 	   $(BUILT_TARGET_FILES_PACKAGE) $@
 
+ILLUSION_TARGET_PACKAGE := $(PRODUCT_OUT)/$(ILLUSION_VERSION).zip
+
 .PHONY: otapackage illusion zip
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 illusion zip: otapackage
 ifneq ($(TARGET_CUSTOM_RELEASETOOL),)
-	@echo -e ${CL_YLW}"Running custom releasetool..."${CL_RST}
-	$(hide) OTAPACKAGE=$(INTERNAL_OTA_PACKAGE_TARGET) APKCERTS=$(APKCERTS_FILE) $(TARGET_CUSTOM_RELEASETOOL)
-else
-	@echo -e ${CL_YLW}"Running vendor releasetool..."${CL_RST}
-	$(hide) OTAPACKAGE=$(INTERNAL_OTA_PACKAGE_TARGET) APKCERTS=$(APKCERTS_FILE) ./vendor/illusion/tools/squisher
+	$(error TARGET_CUSTOM_RELEASETOOL is deprecated)
 endif
+	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(ILLUSION_TARGET_PACKAGE)
+	$(hide) $(MD5SUM) $(ILLUSION_TARGET_PACKAGE) > $(ILLUSION_TARGET_PACKAGE).md5sum
+	@echo -e ${CL_CYN}"Package Complete: $(ILLUSION_TARGET_PACKAGE)"${CL_RST}
 
 # -----------------------------------------------------------------
 # The update package
@@ -1514,7 +1525,6 @@ $(APPS_ZIP): $(INSTALLED_SYSTEMIMAGE)
 	$(hide) rm -rf $@
 	$(hide) mkdir -p $(dir $@)
 	$(hide) zip -qj $@ $(TARGET_OUT_APPS)/*
-
 
 #------------------------------------------------------------------
 # A zip of emma code coverage meta files. Generated for fully emma
